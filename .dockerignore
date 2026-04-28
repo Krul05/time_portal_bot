@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables and secrets
+.env
+.env.*
+config.local.py
+
+# Git and IDE files
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker / compose local data
+docker-compose.override.yml
+
+# Database / local data
+*.sqlite
+*.db
+postgres_data/
+
+# Archives and temporary files
+*.zip
+*.tar
+*.tar.gz
+tmp/
+temp/
+
+# Keep these files in build context:
+# Dockerfile
+# docker-compose.yml
+# requirements.txt
+# create.sql
+# *.py
