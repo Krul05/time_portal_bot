@@ -4,6 +4,7 @@ import os
 import telebot
 from telebot import types
 
+import Checker
 import config
 from DB_manager import DB_manager
 from Museum import Museum
@@ -86,12 +87,12 @@ class Bot:
                 question = "Выберите тип музея"
                 choose(call.message.chat.id, array, question)
             elif call.data == "go quest":
-                self.bot.send_message(call.message.chat.id, 'Введите id квеста, который хотите пройти')
+                self.bot.send_message(call.message.chat.id, 'Введите номер квеста, который хотите пройти')
                 db_manager = DB_manager()
                 quests = db_manager.get_quests()
                 print(quests)
                 for i in range(len(quests)):
-                    self.bot.send_message(call.message.chat.id, "id: " + str(quests[i][0]) + '\n' + "Название квеста: " + str(quests[i][1]) + "\n" + "Описание квеста: " + str(quests[i][2]) + "\n" + "Рейтинг квеста: " + str(quests[i][3]))
+                    self.bot.send_message(call.message.chat.id, "Номер квеста: " + str(quests[i][0]) + '\n' + "Название квеста: " + str(quests[i][1]) + "\n" + "Описание квеста: " + str(quests[i][2]) + "\n" + "Рейтинг квеста: " + str(quests[i][3]))
                 self.state = config.St_id
 
                 @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_id)
@@ -110,7 +111,8 @@ class Bot:
                                           func=lambda message: self.state == config.St_ans_on_question)
                 def answer_on_question(message):
                     questions = self.questions_of_quest
-                    if str(message.text) == str(questions[self.j][1]):
+                    checker = Checker()
+                    if checker.is_answer_correct(str(questions[self.j][0]), str(message.text), str(questions[self.j][1])):
                         self.bot.send_message(message.from_user.id, "Это правильный ответ")
                         if (len(questions) != self.j + 1):
                             self.j += 1
