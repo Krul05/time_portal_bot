@@ -1,13 +1,11 @@
 class Museum:
     name_museum = ""
-    latitude = ""
+    map_url = ""
     longitude = ""
     type = ""
-    def set_latitude(self, latitude):
-        self.latitude = latitude
+    def set_map_url(self, map_url):
+        self.map_url = map_url
 
-    def set_longitude(self, longitude):
-        self.longitude = longitude
     def set_name_museum(self, name_museium):
         self.name_museum = name_museium
     def set_type(self, type):

@@ -17,6 +17,7 @@ class Bot:
     bot = telebot.TeleBot(token)
     i = 1
     j = 0
+    counter_of_wrong_answers = 0
     museum = Museum()
     quest_rate_id = None
     questions_arr = []
@@ -42,6 +43,7 @@ class Bot:
             self.message = None
             self.state = "0"
             self.questions_of_quest = []
+            self.counter_of_wrong_answers = 0
 
         def rating(user):
             keyboard = types.InlineKeyboardMarkup()
@@ -81,7 +83,6 @@ class Bot:
         @self.bot.callback_query_handler(func=lambda call: True)
         def callback_worker(call):
             if call.data == "create quest":
-                print(call)
                 self.bot.send_message(call.message.chat.id, 'Начнём создание')
                 array = [["Наука и техника", "science"], ["Культура", "culture"], ["Другое", "other"]]
                 question = "Выберите тип музея"
@@ -90,7 +91,6 @@ class Bot:
                 self.bot.send_message(call.message.chat.id, 'Введите номер квеста, который хотите пройти')
                 db_manager = DB_manager()
                 quests = db_manager.get_quests()
-                print(quests)
                 for i in range(len(quests)):
                     self.bot.send_message(call.message.chat.id, "Номер квеста: " + str(quests[i][0]) + '\n' + "Название квеста: " + str(quests[i][1]) + "\n" + "Описание квеста: " + str(quests[i][2]) + "\n" + "Рейтинг квеста: " + str(quests[i][3]))
                 self.state = config.St_id
@@ -126,8 +126,21 @@ class Bot:
                         self.state = config.St_wait
                         start(message)
                     else:
-                        self.bot.send_message(message.from_user.id, "Это неправильный ответ, попробуйте ещё раз")
-                        self.state = config.St_ans_on_question
+                        self.counter_of_wrong_answers += 1
+                        if self.counter_of_wrong_answers < 3:
+                            self.bot.send_message(message.from_user.id, "Это неправильный ответ, попробуйте ещё раз")
+                            self.state = config.St_ans_on_question
+                        else:
+                            self.counter_of_wrong_answers = 0
+                            self.bot.send_message(message.from_user.id, "Это неправильный ответ. Правильный ответ: "+ str(questions[self.j][1]))
+                            if (len(questions) != self.j + 1):
+                                self.j += 1
+                                self.bot.send_message(message.from_user.id, questions[self.j][0])
+                                self.state = config.St_ans_on_question
+                            else:
+                                self.state = config.St_wait
+                                self.j = 0
+                                rating(message.from_user.id)
 
 
 
@@ -149,9 +162,7 @@ class Bot:
                 create_quest(call)
             elif call.data == '1' or call.data == '2' or call.data == '3' or call.data == '4' or call.data == '5':
                 db_manager = DB_manager()
-                print(1)
                 db_manager.set_rating(call.data, self.quest_rate_id)
-                print(2)
                 self.bot.send_message(call.from_user.id, "Спасибо за прохождение теста!")
                 array = [['Создать квест', 'create quest'], ['Пройти квест', 'go quest']]
                 question = 'Что Вы хотите сделать?'
@@ -178,32 +189,19 @@ class Bot:
             @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_name_museum)
             def museum_name(message):
                 self.museum.set_name_museum(message.text)
-                self.bot.send_message(message.from_user.id, "Напишите широту музея")
-                self.state = config.St_latitude
+                self.bot.send_message(message.from_user.id, "Напишите ссылку на музей в картах")
+                self.state = config.St_map_url
 
-            @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_latitude)
-            def latitude(message):
-                self.museum.set_latitude(message.text)
-                try:
-                    float(self.museum.latitude)
-                    self.bot.send_message(message.from_user.id, "Напишите долготу музея")
-                    self.state = config.St_longitude
-                except:
-                    self.bot.send_message(message.from_user.id, "Широта должна быть вещественным числом")
-                    self.bot.send_message(message.from_user.id, "Попробуйте ввести широту музея ещё раз")
-                    return
-
-            @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_longitude)
-            def longitude(message):
-                self.museum.set_longitude(message.text)
-                try:
-                    float(self.museum.longitude)
+            @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_map_url)
+            def map_url(message):
+                self.museum.set_map_url(message.text)
+                if ("http://" in self.museum.map_url or "https://" in self.museum.map_url) and ("map" in self.museum.map_url or "2gis" in self.museum.map_url):
                     self.bot.send_message(message.from_user.id, "Напишите " + str(self.i) + "-й вопрос")
                     self.i += 1
                     self.state = config.St_question
-                except:
-                    self.bot.send_message(message.from_user.id, "Долгота должна быть вещественным числом")
-                    self.bot.send_message(message.from_user.id, "Попробуйте ввести долготу музея ещё раз")
+                else:
+                    self.bot.send_message(message.from_user.id, "Это не похоже на ссылку в картах")
+                    self.bot.send_message(message.from_user.id, "Попробуйте ввести ввести ссылку из Яндекс карт, Google карт или 2gis")
                     return
 
             @self.bot.message_handler(content_types=['text'], func=lambda message: self.state == config.St_question)
@@ -234,7 +232,7 @@ class Bot:
 
         def check(user, museum, questions_arr, quest):
             self.bot.send_message(user, "Вот то, что ты ввёл:")
-            s = "Название квеста: " + str(quest.name_quest) + "\n" + "Описание квеста: " + str(quest.discription) + "\n" + "Название музея: " + str(museum.name_museum) + "\n" + "Тип музея: " + museum.get_type() + "\n" + "Координаты музея: " + str(museum.latitude) + ", " + str(museum.longitude)
+            s = "Название квеста: " + str(quest.name_quest) + "\n" + "Описание квеста: " + str(quest.discription) + "\n" + "Название музея: " + str(museum.name_museum) + "\n" + "Тип музея: " + museum.get_type() + "\n" + "Ссылка на музей: " + str(museum.map_url)
             self.bot.send_message(user, s)
             for i in range(1, len(questions_arr)+1):
                 s = "Вопрос " + str(i) + ": " + str(questions_arr[i-1].question) + "\n" + "Ответ " + str(i) + ": " + str(questions_arr[i-1].answer)

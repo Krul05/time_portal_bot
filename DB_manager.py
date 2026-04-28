@@ -17,10 +17,10 @@ class DB_manager:
 
     def addMuseum(self, museum, cur):
         cur.execute("""
-                INSERT INTO museum(name_museum, type_museum, latitude, longitude)
-                VALUES (%s, %s, %s, %s) 
+                INSERT INTO museum(name_museum, type_museum, map_url)
+                VALUES (%s, %s, %s) 
                 RETURNING id
-            """, (museum.name_museum, museum.type, museum.latitude, museum.longitude))
+            """, (museum.name_museum, museum.type, museum.map_url))
         return cur.fetchone()[0]
     def addCreator(self, creator, address, cur):
         cur.execute("""
@@ -31,8 +31,8 @@ class DB_manager:
         return cur.fetchone()[0]
     def addQuest(self, quest, museum_id, creator_id, cur):
         cur.execute("""
-            INSERT INTO quest(name_quest, discription, creator, museum, rating)
-            VALUES (%s, %s, %s, %s, 0)
+            INSERT INTO quest(name_quest, discription, creator, museum, num_rating, dec_rating, rating)
+            VALUES (%s, %s, %s, %s, 0, 0, 0)
             RETURNING id
         """, (quest.name_quest, quest.discription, creator_id, museum_id))
         return  cur.fetchone()[0]
@@ -59,29 +59,22 @@ class DB_manager:
                 """, (id,))
         questions = cur.fetchall()
         cur.close()
-        print(questions)
         return questions
     def set_rating(self, rating, quest_id):
         cur = self.conn.cursor()
-        print(3)
         cur.execute("""
-                        SELECT rating FROM quest where id = %s
+                        SELECT num_rating, dec_rating FROM quest where id = %s
                         """, (quest_id,))
-        print(4)
-        new_rating = float(cur.fetchone()[0])
-        print(5)
-        if new_rating==0:
-            new_rating = float(rating)
-        else:
-            new_rating = (float(rating) + new_rating)/2
+        resp = cur.fetchall()
+        print(resp)
+        num_rating = int(resp[0][0]) + int(rating)
+        dec_rating = int(resp[0][1]) + 1
         cur.close()
-        self.set_new_rating(new_rating, quest_id)
-    def set_new_rating(self, new_rating, quest_id):
+        self.set_new_rating(num_rating, dec_rating, quest_id)
+    def set_new_rating(self, num_rating, dec_rating, quest_id):
         cur = self.conn.cursor()
-        print(6)
         cur.execute("""
-                                UPDATE quest set rating = %s where id = %s
-                                """, (new_rating, quest_id))
-        print(7)
+                                UPDATE quest set num_rating = %s, dec_rating = %s,  rating = %s where id = %s
+                                """, (num_rating, dec_rating, round(float(num_rating)/float(dec_rating), 2), quest_id))
         self.conn.commit()
         cur.close()
