@@ -4,7 +4,7 @@ import os
 import telebot
 from telebot import types
 
-import Checker
+from Checker import Checker
 import config
 from DB_manager import DB_manager
 from Museum import Museum
