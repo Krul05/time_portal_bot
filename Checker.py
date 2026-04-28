@@ -5,7 +5,7 @@ import difflib
 import requests
 
 class Checker:
-    def normalize_string(text):
+    def normalize_string(self, text):
 
         text = str(text).lower().strip()
         text = text.replace("ё", "е")
@@ -17,9 +17,9 @@ class Checker:
         return text
 
 
-    def simple_answer_check(user_answer, correct_answer):
-        user_norm = normalize_string(user_answer)
-        correct_norm = normalize_string(correct_answer)
+    def simple_answer_check(self, user_answer, correct_answer):
+        user_norm = self.normalize_string(user_answer)
+        correct_norm = self.normalize_string(correct_answer)
 
         if user_norm == correct_norm:
             return True
@@ -31,7 +31,7 @@ class Checker:
         return False
 
 
-    def ai_answer_check(question, user_answer, correct_answer):
+    def ai_answer_check(self, question, user_answer, correct_answer):
         github_token = os.getenv("GITHUB_TOKEN")
 
         if not github_token:
@@ -88,8 +88,8 @@ class Checker:
             return False
 
 
-    def is_answer_correct(question, user_answer, correct_answer):
-        if simple_answer_check(user_answer, correct_answer):
+    def is_answer_correct(self, question, user_answer, correct_answer):
+        if self.simple_answer_check(user_answer, correct_answer):
             return True
 
-        return ai_answer_check(question, user_answer, correct_answer)
+        return self.ai_answer_check(question, user_answer, correct_answer)
